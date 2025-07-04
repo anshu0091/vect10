@@ -31,10 +31,10 @@ export default function Footer() {
                 <MapPin className="w-5 h-5 text-emerald-400" />
                 <span>Lasnamäe 4B-26 11412, Tallinn, Estonia</span>
               </div>
-              <div className="flex items-center gap-3 text-gray-400">
+              {/* <div className="flex items-center gap-3 text-gray-400">
                 <Mail className="w-5 h-5 text-emerald-400" />
                 <span>contact@vectorium.com</span>
-              </div>
+              </div> */}
             </div>
 
             {/* Social Links */}
@@ -62,8 +62,8 @@ export default function Footer() {
               <li><Link href="/marketplace" className="hover:text-emerald-400 transition-colors">Marketplace</Link></li>
               <li><Link href="/wallet" className="hover:text-emerald-400 transition-colors">Wallet</Link></li>
               <li><Link href="/security" className="hover:text-emerald-400 transition-colors">Security</Link></li>
-              <li><Link href="/coming-soon" className="hover:text-emerald-400 transition-colors">API Documentation</Link></li>
-              <li><Link href="/coming-soon" className="hover:text-emerald-400 transition-colors">Developer Tools</Link></li>
+              {/* <li><Link href="/coming-soon" className="hover:text-emerald-400 transition-colors">API Documentation</Link></li>
+              <li><Link href="/coming-soon" className="hover:text-emerald-400 transition-colors">Developer Tools</Link></li> */}
             </ul>
           </div>
 
@@ -74,9 +74,9 @@ export default function Footer() {
               <li><Link href="/about" className="hover:text-emerald-400 transition-colors">About Us</Link></li>
               <li><Link href="/careers" className="hover:text-emerald-400 transition-colors">Careers</Link></li>
               <li><Link href="/coming-soon" className="hover:text-emerald-400 transition-colors">Blog</Link></li>
-              <li><Link href="/coming-soon" className="hover:text-emerald-400 transition-colors">Press</Link></li>
+              {/* <li><Link href="/coming-soon" className="hover:text-emerald-400 transition-colors">Press</Link></li>
               <li><Link href="/coming-soon" className="hover:text-emerald-400 transition-colors">Investors</Link></li>
-              <li><Link href="/coming-soon" className="hover:text-emerald-400 transition-colors">Partnerships</Link></li>
+              <li><Link href="/coming-soon" className="hover:text-emerald-400 transition-colors">Partnerships</Link></li> */}
             </ul>
           </div>
 
@@ -85,10 +85,10 @@ export default function Footer() {
             <h3 className="font-semibold mb-4 text-emerald-400">Resources</h3>
             <ul className="space-y-3 text-gray-400">
               <li><Link href="/250617 Vectorium (VECT) – Whitepaper .25 Edition.pdf" target="_blank" className="hover:text-emerald-400 transition-colors">White Paper</Link></li>
-              <li><Link href="/coming-soon" className="hover:text-emerald-400 transition-colors">Help Center</Link></li>
+              {/* <li><Link href="/coming-soon" className="hover:text-emerald-400 transition-colors">Help Center</Link></li> */}
               <li><Link href="/support" className="hover:text-emerald-400 transition-colors">Support</Link></li>
-              <li><Link href="/coming-soon" className="hover:text-emerald-400 transition-colors">Community</Link></li>
-              <li><Link href="/coming-soon" className="hover:text-emerald-400 transition-colors">System Status</Link></li>
+              {/* <li><Link href="/coming-soon" className="hover:text-emerald-400 transition-colors">Community</Link></li>
+              <li><Link href="/coming-soon" className="hover:text-emerald-400 transition-colors">System Status</Link></li> */}
               <li><Link href="/coming-soon" className="hover:text-emerald-400 transition-colors">Carbon Calculator</Link></li>
             </ul>
           </div>
