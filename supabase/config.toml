@@ -1,0 +1,36 @@
+# Supabase CLI config — see https://supabase.com/docs/guides/cli/config
+# Use: npx supabase link then npx supabase db push
+
+project_id = "project"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[db.migrations]
+enabled = true
+# Migrations in supabase/migrations/ are applied in order by db push
+
+[db.seed]
+enabled = false
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = ["https://127.0.0.1:3000"]
+
+[storage]
+enabled = true

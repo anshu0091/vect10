@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "clean": "rimraf .next"
+    "clean": "rimraf .next",
+    "supabase": "supabase",
+    "db:link": "supabase link",
+    "db:push": "supabase db push"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -79,6 +82,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/nodemailer": "^6.4.17"
+    "@types/nodemailer": "^6.4.17",
+    "supabase": "^2.0.0"
   }
 }
