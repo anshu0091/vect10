@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
-import { fetchUserCarbonCredits, fetchUserTransactions, createTransaction, fetchUserWalletBalance, updateUserWalletBalance } from '@/lib/api/marketplace';
+import { createTransaction } from '@/lib/api/marketplace';
+import { loadWalletSnapshot } from '@/lib/wallet/loadWalletSnapshot';
 
 export interface Transaction {
   id: string;
@@ -11,7 +12,7 @@ export interface Transaction {
   totalAmount: number;
   timestamp: string;
   status: 'completed' | 'pending' | 'failed';
-  txHash?: string; // For blockchain transaction hash
+  txHash?: string;
 }
 
 export interface WalletState {
@@ -20,7 +21,7 @@ export interface WalletState {
     id: string;
     name: string;
     quantity: number;
-    tokenId?: string; // For future NFT integration
+    tokenId?: string;
     vintage: string;
     certificationBody: string;
     carbonReduction: number;
@@ -33,49 +34,18 @@ export interface WalletState {
 }
 
 const initialState: WalletState = {
-  balance: 0, // Starting with demo balance changed from 10000 to 0
+  balance: 0,
   carbonCredits: [],
   transactions: [],
   connected: false,
   address: null,
   loading: false,
-  error: null
+  error: null,
 };
 
-// Async thunks
 export const fetchWalletData = createAsyncThunk(
   'wallet/fetchData',
-  async () => {
-    const [userCredits, userTransactions, balance] = await Promise.all([
-      fetchUserCarbonCredits(),
-      fetchUserTransactions(),
-      fetchUserWalletBalance()
-    ]);
-
-    return {
-      balance,
-      carbonCredits: userCredits.map((credit: any) => ({
-        id: credit.credit_id,
-        name: credit.carbon_credits.name,
-        quantity: credit.quantity,
-        vintage: credit.carbon_credits.vintage,
-        certificationBody: credit.carbon_credits.certification_body,
-        carbonReduction: credit.carbon_credits.carbon_reduction * credit.quantity
-      })),
-      transactions: userTransactions.map((tx: any) => ({
-        id: tx.id,
-        type: tx.type,
-        creditId: tx.credit_id,
-        creditName: tx.carbon_credits.name,
-        quantity: tx.quantity,
-        price: tx.price,
-        totalAmount: tx.total_amount,
-        timestamp: tx.created_at,
-        status: tx.status,
-        txHash: tx.tx_hash
-      }))
-    };
-  }
+  async () => loadWalletSnapshot()
 );
 
 export const purchaseCarbonCredit = createAsyncThunk(
@@ -89,39 +59,42 @@ export const purchaseCarbonCredit = createAsyncThunk(
     certificationBody: string;
     carbonReduction: number;
   }) => {
-    const transaction = await createTransaction({
+    await createTransaction({
       creditId: data.creditId,
       type: 'buy',
       quantity: data.quantity,
-      price: data.price
+      price: data.price,
     });
-    const totalCost = data.quantity * data.price;
-    // Update backend balance after purchase
-    await updateUserWalletBalance(-totalCost); // This will set the balance to -totalCost, you may want to fetch and subtract instead
-    return {
-      transaction: {
-        id: transaction.id,
-        type: 'buy' as const,
-        creditId: data.creditId,
-        creditName: data.creditName,
-        quantity: data.quantity,
-        price: data.price,
-        totalAmount: totalCost,
-        timestamp: transaction.created_at,
-        status: transaction.status as 'completed' | 'pending' | 'failed'
-      },
-      carbonCredit: {
-        id: data.creditId,
-        name: data.creditName,
-        quantity: data.quantity,
-        vintage: data.vintage,
-        certificationBody: data.certificationBody,
-        carbonReduction: data.carbonReduction * data.quantity
-      },
-      totalCost
-    };
+    return loadWalletSnapshot();
   }
 );
+
+export const sellCarbonCredit = createAsyncThunk(
+  'wallet/sellCredit',
+  async (data: {
+    creditId: string;
+    creditName: string;
+    quantity: number;
+    price: number;
+  }) => {
+    await createTransaction({
+      creditId: data.creditId,
+      type: 'sell',
+      quantity: data.quantity,
+      price: data.price,
+    });
+    return loadWalletSnapshot();
+  }
+);
+
+function applyWalletSnapshot(
+  state: WalletState,
+  payload: Awaited<ReturnType<typeof loadWalletSnapshot>>
+) {
+  state.balance = payload.balance;
+  state.carbonCredits = payload.carbonCredits;
+  state.transactions = payload.transactions as Transaction[];
+}
 
 export const walletSlice = createSlice({
   name: 'wallet',
@@ -131,45 +104,48 @@ export const walletSlice = createSlice({
       state.balance = action.payload;
     },
     addCarbonCredits: (state, action: PayloadAction<WalletState['carbonCredits'][0]>) => {
-      const existingIndex = state.carbonCredits.findIndex(credit => credit.id === action.payload.id);
-      
+      const existingIndex = state.carbonCredits.findIndex(
+        (credit) => credit.id === action.payload.id
+      );
+
       if (existingIndex !== -1) {
-        // Update existing credit
         state.carbonCredits[existingIndex].quantity += action.payload.quantity;
       } else {
-        // Add new credit
         state.carbonCredits.push(action.payload);
       }
     },
-    removeCarbonCredits: (state, action: PayloadAction<{ id: string, quantity: number }>) => {
+    removeCarbonCredits: (state, action: PayloadAction<{ id: string; quantity: number }>) => {
       const { id, quantity } = action.payload;
-      const existingIndex = state.carbonCredits.findIndex(credit => credit.id === id);
-      
+      const existingIndex = state.carbonCredits.findIndex((credit) => credit.id === id);
+
       if (existingIndex !== -1) {
-        // Reduce quantity
         state.carbonCredits[existingIndex].quantity -= quantity;
-        
-        // Remove if quantity is 0 or less
+
         if (state.carbonCredits[existingIndex].quantity <= 0) {
           state.carbonCredits.splice(existingIndex, 1);
         }
       }
     },
     addTransaction: (state, action: PayloadAction<Transaction>) => {
-      state.transactions.unshift(action.payload); // Add to beginning of array
+      state.transactions.unshift(action.payload);
     },
-    updateTransaction: (state, action: PayloadAction<{ id: string, updates: Partial<Transaction> }>) => {
+    updateTransaction: (
+      state,
+      action: PayloadAction<{ id: string; updates: Partial<Transaction> }>
+    ) => {
       const { id, updates } = action.payload;
-      const index = state.transactions.findIndex(tx => tx.id === id);
-      
+      const index = state.transactions.findIndex((tx) => tx.id === id);
+
       if (index !== -1) {
         state.transactions[index] = { ...state.transactions[index], ...updates };
       }
     },
-    setWalletConnection: (state, action: PayloadAction<{ connected: boolean, address: string | null }>) => {
-      const { connected, address } = action.payload;
-      state.connected = connected;
-      state.address = address;
+    setWalletConnection: (
+      state,
+      action: PayloadAction<{ connected: boolean; address: string | null }>
+    ) => {
+      state.connected = action.payload.connected;
+      state.address = action.payload.address;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
@@ -177,49 +153,6 @@ export const walletSlice = createSlice({
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
-    // For demo purposes - sell carbon credit
-    sellCarbonCredit: (state, action: PayloadAction<{ 
-      creditId: string, 
-      creditName: string, 
-      quantity: number, 
-      price: number 
-    }>) => {
-      const { creditId, creditName, quantity, price } = action.payload;
-      const totalAmount = quantity * price;
-      
-      // Check if user has enough credits
-      const existingIndex = state.carbonCredits.findIndex(credit => credit.id === creditId);
-      
-      if (existingIndex === -1 || state.carbonCredits[existingIndex].quantity < quantity) {
-        return; // Not enough credits
-      }
-      
-      // Add to balance
-      state.balance += totalAmount;
-      
-      // Remove carbon credits from wallet
-      state.carbonCredits[existingIndex].quantity -= quantity;
-      
-      // Remove if quantity is 0
-      if (state.carbonCredits[existingIndex].quantity <= 0) {
-        state.carbonCredits.splice(existingIndex, 1);
-      }
-      
-      // Add transaction
-      const transaction: Transaction = {
-        id: `tx${Date.now()}`,
-        type: 'sell',
-        creditId,
-        creditName,
-        quantity,
-        price,
-        totalAmount,
-        timestamp: new Date().toISOString(),
-        status: 'completed'
-      };
-      
-      state.transactions.unshift(transaction);
-    }
   },
   extraReducers: (builder) => {
     builder
@@ -229,9 +162,7 @@ export const walletSlice = createSlice({
       })
       .addCase(fetchWalletData.fulfilled, (state, action) => {
         state.loading = false;
-        state.balance = action.payload.balance;
-        state.carbonCredits = action.payload.carbonCredits;
-        state.transactions = action.payload.transactions;
+        applyWalletSnapshot(state, action.payload);
       })
       .addCase(fetchWalletData.rejected, (state, action) => {
         state.loading = false;
@@ -243,41 +174,36 @@ export const walletSlice = createSlice({
       })
       .addCase(purchaseCarbonCredit.fulfilled, (state, action) => {
         state.loading = false;
-        
-        // Deduct balance
-        state.balance -= action.payload.totalCost;
-        
-        // Add carbon credits
-        const existingIndex = state.carbonCredits.findIndex(
-          credit => credit.id === action.payload.carbonCredit.id
-        );
-        
-        if (existingIndex !== -1) {
-          state.carbonCredits[existingIndex].quantity += action.payload.carbonCredit.quantity;
-        } else {
-          state.carbonCredits.push(action.payload.carbonCredit);
-        }
-        
-        // Add transaction
-        state.transactions.unshift(action.payload.transaction);
+        applyWalletSnapshot(state, action.payload);
       })
       .addCase(purchaseCarbonCredit.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to purchase carbon credit';
+      })
+      .addCase(sellCarbonCredit.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(sellCarbonCredit.fulfilled, (state, action) => {
+        state.loading = false;
+        applyWalletSnapshot(state, action.payload);
+      })
+      .addCase(sellCarbonCredit.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to sell carbon credit';
       });
   },
 });
 
-export const { 
-  setBalance, 
-  addCarbonCredits, 
-  removeCarbonCredits, 
-  addTransaction, 
+export const {
+  setBalance,
+  addCarbonCredits,
+  removeCarbonCredits,
+  addTransaction,
   updateTransaction,
   setWalletConnection,
   setLoading,
   setError,
-  sellCarbonCredit
 } = walletSlice.actions;
 
 export default walletSlice.reducer;

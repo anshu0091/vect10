@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ balance: data.balance });
+    return NextResponse.json({ balance: Number(data.balance) });
   } catch (error) {
     console.error('Unexpected error:', error);
     return NextResponse.json(

@@ -23,7 +23,6 @@ export default function Dashboard() {
       const { data } = await supabase.auth.getUser();
       if (data.user) {
         setUser(data.user);
-        // Fetch wallet data for the authenticated user
         dispatch(fetchWalletData());
       } else {
         router.push('/auth/login');
@@ -33,6 +32,24 @@ export default function Dashboard() {
 
     checkUser();
   }, [router, dispatch]);
+
+  // Refresh holdings when returning to dashboard (e.g. after selling on wallet page)
+  useEffect(() => {
+    if (!user) return;
+
+    const refreshWallet = () => dispatch(fetchWalletData());
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refreshWallet();
+    };
+
+    window.addEventListener('focus', refreshWallet);
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      window.removeEventListener('focus', refreshWallet);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [user, dispatch]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();

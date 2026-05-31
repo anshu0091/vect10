@@ -201,7 +201,7 @@ export const fetchUserWalletBalance = async () => {
       throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
     const { balance } = await response.json();
-    return balance;
+    return Number(balance);
   } catch (error) {
     console.error('Error fetching wallet balance:', error);
     throw new Error(error instanceof Error ? error.message : 'Failed to fetch wallet balance');
